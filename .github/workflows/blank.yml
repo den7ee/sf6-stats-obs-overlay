@@ -34,7 +34,3 @@ jobs:
         run: |
           echo Add other actions to build,
           echo test, and deploy your project.
-
-      # Run check/install Self Hosted Runner do GitHub
-      - name: check-install-github-runner
-        run: ls
