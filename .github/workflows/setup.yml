@@ -1,0 +1,21 @@
+name: Setup Local Environment
+
+on:
+  workflow_dispatch:
+
+jobs:
+  setup:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Install Ansible
+        run: |
+          sudo apt update
+          sudo apt install -y ansible
+
+      - name: Run Ansible
+        run: |
+          ansible-playbook -i inventory.ini playbook.yml
