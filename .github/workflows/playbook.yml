@@ -1,0 +1,64 @@
+- hosts: local
+  become: true
+
+  vars:
+    runner_user: github-runner
+    app_dir: /opt/obs-overlay
+    cluster_name: obs-cluster
+
+  tasks:
+
+    - name: Ensure base packages
+      apt:
+        name:
+          - docker.io
+          - curl
+          - git
+        state: present
+        update_cache: yes
+
+    - name: Ensure docker running
+      service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Create github-runner user
+      user:
+        name: "{{ runner_user }}"
+        shell: /bin/bash
+        groups: docker
+        append: yes
+        create_home: yes
+        state: present
+
+    - name: Allow passwordless sudo
+      copy:
+        dest: "/etc/sudoers.d/{{ runner_user }}"
+        content: "{{ runner_user }} ALL=(ALL) NOPASSWD:ALL"
+        mode: '0440'
+
+    - name: Create app directory
+      file:
+        path: "{{ app_dir }}"
+        state: directory
+        owner: "{{ runner_user }}"
+        group: "{{ runner_user }}"
+        mode: '0755'
+
+    - name: Install kind
+      get_url:
+        url: https://kind.sigs.k8s.io/dl/latest/kind-linux-amd64
+        dest: /usr/local/bin/kind
+        mode: '0755'
+
+    - name: Check existing clusters
+      command: kind get clusters
+      register: kind_clusters
+      failed_when: false
+      changed_when: false
+
+    - name: Create kind cluster
+      command: "kind create cluster --name {{ cluster_name }}"
+      when: cluster_name not in kind_clusters.stdout
+      become_user: "{{ runner_user }}"
